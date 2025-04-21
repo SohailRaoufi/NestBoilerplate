@@ -1,22 +1,22 @@
-# NestJS Boilerplate - Under Active Development
+# NestJS Boilerplate - Under Active Development 🚧
 
 This is a NestJS boilerplate project designed to provide a solid foundation for building scalable and maintainable server-side applications. It includes several pre-configured modules and utilities to streamline development.
 
-**Important: This boilerplate is currently under active development. More features and improvements will be added in the future.**
+**Important: This boilerplate is currently under active development. More features and improvements will be added in the future. 🚀**
 
-## Key Features Available
+## Key Features Available ✨
 
 - **NestJS**: A progressive Node.js framework.
 - **TypeScript**: Static typing for enhanced code quality.
 - **MikroORM**: A TypeScript ORM for PostgreSQL.
-- **PostgreSQL**: A powerful relational database.
+- **PostgreSQL**: A powerful relational database. 🐘
 - **BullMQ**: A Redis-based queue system.
 - **Redis**: In-memory data structure store for queue management.
-- **Swagger**: API documentation.
-- **JWT Authentication**: User and admin authentication.
-- **Configuration**: Centralized configuration via `.env` files.
-- **Validation**: Request validation using `class-validator`.
-- **Docker**: Docker and Docker Compose files for easy deployment.
+- **Swagger**: API documentation. 📝
+- **JWT Authentication**: User and admin authentication. 🔑
+- **Configuration**: Centralized configuration via `.env` files. ⚙️
+- **Validation**: Request validation using `class-validator`. ✅
+- **Docker**: Docker and Docker Compose files for easy deployment. 🐳
 
 ## Getting Started
 
@@ -63,4 +63,4 @@ This is a NestJS boilerplate project designed to provide a solid foundation for 
 
 ## Contributing
 
-Contributions are welcome! Please note that the project is actively evolving.
+Contributions are welcome! Please note that the project is actively evolving. 🤝

@@ -3,8 +3,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function setupSwagger(app: INestApplication<any>) {
   const swaggerConfigs = new DocumentBuilder()
-    .setTitle('Baran API')
-    .setDescription('Baran Description')
+    .setTitle('BoilerPlate API')
+    .setDescription('BoilerPlate Description')
     .setVersion('1.0')
     .addBearerAuth()
     .addGlobalParameters({
