@@ -14,9 +14,6 @@ export class UserDevice {
   fcmToken?: string;
 
   @Property()
-  lastLoginAt?: Date = new Date();
-
-  @Property()
   createdAt?: Date = new Date();
 
   @Property({ onUpdate: () => new Date() })

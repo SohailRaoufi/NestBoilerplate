@@ -2,20 +2,21 @@ import { Queue } from 'bullmq';
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 
-import { EmailQueue } from '@/common/interfaces/queues';
+import { EmailQueue } from '@/queues/consumers/email.consumer';
 import { calculateExpiryInMinutes } from '@/utils/datetime';
-
 import {
-  ISendAccountVerifiedEmail,
-  ISendForgetPasswordPayload,
-  ISendInstructorInvalidDocument,
-  ISendSupportResolvedEmail,
-} from './interfaces/email-interfaces';
+  ClientForgetPasswordEventPayload,
+  ClientOtpEventPayload,
+} from '@/events/definations/client/client.events';
+import { EntityManager } from '@mikro-orm/postgresql';
+import { UserSecurityAction } from '@/entities/user/user-security-action.entity';
+import { SecurityActionsStatus } from '@/common/enums/security-action.enum';
 
 @Injectable()
 export class EmailService {
   constructor(
     @InjectQueue('email') private readonly emailQueue: Queue<EmailQueue>,
+    private readonly em: EntityManager,
   ) {}
 
   /**
@@ -27,7 +28,7 @@ export class EmailService {
     email,
     token,
     expiry,
-  }: ISendForgetPasswordPayload) {
+  }: ClientForgetPasswordEventPayload) {
     // Convert expiry to minutes
     const minutes = calculateExpiryInMinutes(expiry);
     // Create reasetLink using token
@@ -47,67 +48,35 @@ export class EmailService {
     });
   }
 
-  /**
-   * Send Email for Invalid Documents
-   * @param payload
-   */
-  async sendInstructorInvalidDocumentEmail(
-    payload: ISendInstructorInvalidDocument,
-  ) {
-    const { email, fullName, documents } = payload;
+  async sendOtp({
+    otpCode,
+    otpId,
+    email,
+    expiry,
+    fullName,
+  }: ClientOtpEventPayload) {
+    try {
+      const expiryMinutes = calculateExpiryInMinutes(expiry);
 
-    const url = process.env.FRONTEND_URL;
+      await this.emailQueue.add('otp-email', {
+        to: email,
+        subject: 'Otp Code',
+        template: 'otp-email',
+        context: {
+          title: 'OTP Verification',
+          otpCode,
+          expiryMinutes,
+          fullName,
+        },
+      });
 
-    await this.emailQueue.add('invalid-document-email', {
-      to: email,
-      subject: 'Invalid Document',
-      template: 'invalid-document',
-      context: {
-        title: 'Invalid Documents',
-        fullName,
-        documents,
-        url,
-      },
-    });
-  }
-
-  /**
-   * Send Account Verified Email
-   * @param payload
-   */
-  async sendAccountVerifiedEmail(payload: ISendAccountVerifiedEmail) {
-    const { email, fullName } = payload;
-
-    await this.emailQueue.add('account-verified', {
-      to: email,
-      subject: 'Account Verified',
-      template: 'account-verified',
-      context: {
-        title: 'Account Verified',
-        fullName,
-        email,
-      },
-    });
-  }
-
-  /**
-   * Send Support Resolved Email
-   * @param payload
-   */
-  async sendSupportResolvedEmail(payload: ISendSupportResolvedEmail) {
-    const {
-      supportRequest: { email, subject },
-    } = payload;
-
-    await this.emailQueue.add('support-resolved', {
-      to: email,
-      subject: 'Support Resolved',
-      template: 'support-resolved',
-      context: {
-        title: 'Support Resolved',
-        email,
-        subject,
-      },
-    });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+      // delete the otp if something went wrong
+      await this.em.nativeDelete(UserSecurityAction, {
+        id: otpId,
+        status: SecurityActionsStatus.PENDING,
+      });
+    }
   }
 }

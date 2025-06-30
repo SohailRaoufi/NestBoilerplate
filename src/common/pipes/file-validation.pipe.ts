@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -94,8 +93,8 @@ export class FileValidationPipe<T extends Category> implements PipeTransform {
    */
   private mergeAllowedTypes() {
     this.category = Array.isArray(this.categories)
-      ? this.categories.filter(Boolean)
-      : [this.categories].filter(Boolean);
+      ? (this.categories.filter((cat) => !!cat) as Category[])
+      : ([this.categories].filter((cat) => !!cat) as Category[]);
 
     const merged =
       this.category.length > 0

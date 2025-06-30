@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import 'dotenv/config';
 import * as sharp from 'sharp';
 import { extname } from 'path';
@@ -11,9 +13,8 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 
-import { resizeImage } from '@/utils/image-resize';
-
 import { S3BucketPaths } from './s3-bucket-paths';
+import { resizeImage } from '@/utils/image-resize';
 
 @Injectable()
 export class S3BucketService {
@@ -24,20 +25,20 @@ export class S3BucketService {
   private isMinio: boolean;
   private s3Region: string;
   constructor() {
-    this.endpoint = process.env.MINIO_ENDPOINT;
+    this.endpoint = process.env.MINIO_ENDPOINT!;
     this.isMinio = process.env.S3_IS_MINIO === 'true';
-    this.s3Region = process.env.S3_REGION;
+    this.s3Region = process.env.S3_REGION!;
     this.s3Client = new S3Client({
-      region: process.env.S3_REGION,
+      region: process.env.S3_REGION!,
       credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID,
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
       },
       ...(this.isMinio && { forcePathStyle: true, endpoint: this.endpoint }),
     });
 
-    this.bucketName = process.env.S3_PUBLIC_BUCKET_NAME;
-    this.privateBucketName = process.env.S3_PRIVATE_BUCKET_NAME;
+    this.bucketName = process.env.S3_PUBLIC_BUCKET_NAME!;
+    this.privateBucketName = process.env.S3_PRIVATE_BUCKET_NAME!;
   }
 
   /**

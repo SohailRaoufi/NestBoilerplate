@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 
 export function setupSwagger(app: INestApplication<any>) {
   const swaggerConfigs = new DocumentBuilder()
@@ -16,12 +17,11 @@ export function setupSwagger(app: INestApplication<any>) {
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfigs);
-  SwaggerModule.setup(
-    process.env.SWAGGER_PATH || 'docs',
-    app,
-    swaggerDocument,
-    {
-      swaggerOptions: { defaultModelsExpandDepth: -1 },
-    },
+
+  app.use(
+    '/docs',
+    apiReference({
+      content: swaggerDocument,
+    }),
   );
 }

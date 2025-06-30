@@ -1,8 +1,14 @@
 import { Job } from 'bullmq';
-import { MailerService } from '@nestjs-modules/mailer';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 
-import { EmailQueue } from '@/common/interfaces/queues';
+import { MailerService } from '@nestjs-modules/mailer';
+
+export type EmailQueue = {
+  to: string;
+  subject: string;
+  template: string;
+  context?: Record<any, any>;
+};
 
 @Processor('email', {
   concurrency: 2,
