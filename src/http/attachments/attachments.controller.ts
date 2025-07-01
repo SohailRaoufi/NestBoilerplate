@@ -3,13 +3,13 @@ import { AttachmentsService } from './attachments.service';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileValidationPipe } from '@/common/pipes/file-validation.pipe';
-import { AttachmentDto } from './dto/attachment.dto';
+import { AttachmentDto, AttachmentResponseDto } from './dto/attachment.dto';
 import { UserJwtGuard } from '@/common/guards/user.guard';
-import { retry } from 'rxjs';
-import { Attachment } from '@/entities/attachments/attachment.entity';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { User } from '@/entities/user/user.entity';
 
 @Controller('attachments')
-// @UseGuards(UserJwtGuard)
+@UseGuards(UserJwtGuard)
 @ApiBearerAuth()
 @ApiTags("Attachments")
 export class AttachmentsController {
@@ -22,8 +22,8 @@ export class AttachmentsController {
     @UseInterceptors(FileInterceptor("file"))
     async upload(
         @UploadedFile(new FileValidationPipe()) file: Express.Multer.File,
-        @Body() payload: AttachmentDto
-    ): Promise<{attachment:Attachment, url: string}> {
+        @Body() payload: AttachmentDto,
+    ): Promise<AttachmentResponseDto> {
         return await this.attachmentService.upload(file);
     }
 }

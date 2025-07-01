@@ -16,7 +16,8 @@ export class AttachmentsService {
 
         const url = await this.s3Service.getPrivateAttachmentsUrl(key);
         const newAttachment = this.em.create(Attachment, {
-            url: key
+            url: key,
+            
         })
 
         await this.em.persistAndFlush(newAttachment);

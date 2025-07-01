@@ -328,7 +328,7 @@ export class AuthService {
    */
   async generateToken(user: User): Promise<string> {
     const payload = {
-      userId: user.id,
+      sub: user.id,
       role: user.role,
     };
 

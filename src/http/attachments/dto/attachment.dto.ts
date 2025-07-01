@@ -1,3 +1,4 @@
+import { Attachment } from '@/entities/attachments/attachment.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AttachmentDto {
@@ -7,4 +8,13 @@ export class AttachmentDto {
     description: 'File to upload',
   })
   file: any;
+}
+
+
+export class AttachmentResponseDto{
+    @ApiProperty()
+    attachment : Attachment;
+
+    @ApiProperty()
+    url : string;
 }

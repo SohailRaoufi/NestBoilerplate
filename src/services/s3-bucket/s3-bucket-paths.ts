@@ -1,3 +1,3 @@
 export class S3BucketPaths {
-  static ATTACHMENT = "/attachment"
+  static ATTACHMENT = "attachment"
 }
