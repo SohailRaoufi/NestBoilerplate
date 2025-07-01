@@ -11,8 +11,8 @@ import { EmailService } from './email.service';
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: 'fixed', delay: 5000 },
-        removeOnComplete: true,
-        removeOnFail: true,
+        // removeOnComplete: true,
+        // removeOnFail: true,
       },
     }),
   ],

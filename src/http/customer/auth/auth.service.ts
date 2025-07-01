@@ -29,13 +29,14 @@ import {
 } from '@/common/enums/security-action.enum';
 import { getAheadDateByMin } from '@/utils/datetime';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ClientForgetPasswordEvent } from '@/events/definations/client/client.events';
+import { CustomerForgetPasswordEvent, CustomerSendOtpEvent } from '@/events/definations/customer/customer.events';
 import { UserDevice } from '@/entities/user/user-device.entity';
 import { OauthService } from '@/services/oauth/oauth.service';
 import { OauthProvider } from '@/common/enums/oauth.enum';
-import { S3BucketService } from '@/services/s3-bucket/s3-bucket.service';
-import { S3BucketPaths } from '@/services/s3-bucket/s3-bucket-paths';
 import { UserRole } from '@/common/enums/user-role.enum';
+import { RegisterDto } from './dto/register.dto';
+import { AttachmentsService } from '@/http/attachments/attachments.service';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -44,7 +45,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly eventEmitter: EventEmitter2,
     private readonly oauthService: OauthService,
-    private readonly s3BucketService: S3BucketService,
+    private readonly attachmentService: AttachmentsService,
   ) {}
 
   /**
@@ -109,11 +110,15 @@ export class AuthService {
    * @throws UnprocessableEntityException if email sending fails
    */
   sendEmailOtp() {
-    //TODO: implement me!!!
-    return {
-      message:
-        'Nigga 1 finally you are here call me i have a better idea for email otp, with regards nigga 3',
-    };
+    this.eventEmitter.emit(
+      'user.forgot-password',
+      new CustomerForgetPasswordEvent({
+        fullName: "Nigga ",
+        email: 'masoom.dev@proton.me',
+        token: "123124213",
+        expiry: new Date(Date.now() + 1000 * 60 * 15),
+      }),
+    );
   }
 
   /**
@@ -124,7 +129,7 @@ export class AuthService {
    * @throws BadRequestException if OTP is invalid or expired
    * @returns token
    */
-  async verifyEmailOtp(otpCode: string, userEmail: string, deviceId: string) {
+  async verifyEmailOtp(otpCode: string, userEmail: string, deviceId: string) : Promise<{token :string}> {
     const user = await this.CheckUserExists(userEmail);
 
     // Prevent re-verifying if already verified
@@ -186,7 +191,7 @@ export class AuthService {
       }
 
       // Reset Token
-      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetToken = this.generateOtp();
 
       // Expiry Date -> 15 Minutes from now
       const expiry = getAheadDateByMin(15);
@@ -207,8 +212,8 @@ export class AuthService {
       // Dispath the Forget Password Event
       this.eventEmitter.emit(
         'user.forgot-password',
-        new ClientForgetPasswordEvent({
-          fullName: user.name,
+        new CustomerForgetPasswordEvent({
+          fullName: user.name || user.email,
           email: user.email,
           token: resetToken,
           expiry,
@@ -224,8 +229,11 @@ export class AuthService {
    * @param payload
    */
   async resetPassword(payload: ResetPasswordDto) {
+    let user = await this.CheckUserExists(payload.email);
+
     const userForgetPassword = await this.em.findOne(UserSecurityAction, {
       secret: payload.token,
+      user : user.id
     });
 
     if (!userForgetPassword) {
@@ -351,13 +359,117 @@ export class AuthService {
     return Math.floor(10000 + Math.random() * 90000).toString();
   }
 
+
+  async handleExistingsUser(user : User){
+    if(user.emailVerifiedAt){
+      throw new UnprocessableException({
+        message: 'User with this email already exists.',
+        field: 'email',
+      });
+    }
+
+
+    const existingUserOtp = await this.em.findOne(
+      UserSecurityAction,
+      {
+        user: user,
+      },
+    );
+
+    if (existingUserOtp) {
+      // delete the existing token
+      await this.em.nativeDelete(UserSecurityAction, {
+        secret: existingUserOtp.secret,
+      });
+    }
+
+    const resetToken = this.generateOtp();
+
+    const expiry = getAheadDateByMin(15);
+
+    const userOtp = this.em.create(UserSecurityAction, {
+      user: user,
+      type: SecurityActionType.OTP,
+      secret: resetToken,
+      expiredAt: expiry,
+      status: SecurityActionsStatus.PENDING,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await this.em.persistAndFlush(userOtp);
+
+    this.eventEmitter.emit(
+      'user.send-otp',
+      new CustomerSendOtpEvent({
+        email : user.email,
+        otpCode : parseInt(userOtp.secret),
+        otpId : userOtp.id,
+        fullName : user.name || "",
+        expiry
+        
+      })
+    )
+  }
+  
+
+  async register(payload: RegisterDto) {
+    let user = await this.userRepository.findOne({email: payload.email})
+    if(user){
+      console.log("here");
+      return this.handleExistingsUser(user);
+    }
+
+    user = this.em.create(User,{
+      email : payload.email,
+      passwordHash : await hashPassword(payload.password),
+      phone : payload.phone,
+      name : null,
+      twoFactorAuthenticationEnabled : false,
+      emailVerifiedAt : null,
+      role : UserRole.CUSTOMER
+    })
+
+    const resetToken = this.generateOtp();
+
+    const expiry = getAheadDateByMin(15);
+
+    const userOtp = this.em.create(UserSecurityAction, {
+      user: user,
+      type: SecurityActionType.OTP,
+      secret: resetToken,
+      expiredAt: expiry,
+      status: SecurityActionsStatus.PENDING,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await this.em.persistAndFlush(userOtp);
+
+    this.eventEmitter.emit(
+      'user.send-otp',
+      new CustomerSendOtpEvent({
+        email : user.email,
+        otpCode : parseInt(userOtp.secret),
+        otpId : userOtp.id,
+        fullName : user.name||  user.email,
+        expiry
+        
+      })
+    )
+  }
+
+
   /**
    * ============================
    * Oauth Methods
    * ============================
    */
 
-  async findOrCreateGoogleUser(payload: GoogleUserPayload, deviceId: string) {
+  
+  async findOrCreateGoogleUser(payload: GoogleUserPayload, deviceId: string): Promise<{
+    token: string;
+  }> {
     const { token } = payload;
 
     const { email, firstName, lastName, profilePictureUrl, sub } =
@@ -370,28 +482,24 @@ export class AuthService {
     });
 
     if (!user) {
-      // Upload Profile Picture
       const file =
         await this.oauthService.fetchProfileImageAsFile(profilePictureUrl);
 
-      const { originalMetadata, thumbnailMetadata } =
-        await this.s3BucketService.UploadPhoto(
-          file,
-          S3BucketPaths.USER_PROFILE_PHOTO,
-        );
+      const filedata = await this.attachmentService.upload(
+        file
+      )
 
-      // Create the user
       user = this.userRepository.create({
         email,
         passwordHash: await hashPassword(v4()),
         role: UserRole.CUSTOMER,
         name: `${firstName} ${lastName}`,
         emailVerifiedAt: new Date(),
-        photo: originalMetadata.url,
-        photoThumbnail: thumbnailMetadata?.url,
+        avatar : filedata.attachment,
         oauthProvider: OauthProvider.GOOGLE,
         oauthProviderId: sub,
         twoFactorAuthenticationEnabled: false,
+        phone: '03001234567',
       });
 
       await this.em.persistAndFlush(user);
@@ -410,7 +518,9 @@ export class AuthService {
     return { token: accessToken };
   }
 
-  async findOrCreateAppleUser(payload: AppleUserPayload, deviceId: string) {
+  async findOrCreateAppleUser(payload: AppleUserPayload, deviceId: string) : Promise<{
+    token: string;
+  }> {
     const { token } = payload;
 
     const { email, sub } = await this.oauthService.verifiyAppleToken(token);
@@ -432,13 +542,14 @@ export class AuthService {
         emailVerifiedAt: new Date(),
         oauthProvider: OauthProvider.APPLE,
         oauthProviderId: sub,
+        avatar : null,
         twoFactorAuthenticationEnabled: false,
+        phone: '03001234567',
       });
 
       await this.em.persistAndFlush(user);
     }
 
-    // for cases when learner is manual registerd but not otp verified
     if (!user.emailVerifiedAt) {
       user.emailVerifiedAt = new Date();
       await this.em.persistAndFlush(user);

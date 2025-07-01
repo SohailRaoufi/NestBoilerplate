@@ -2,41 +2,45 @@ import { v4 } from 'uuid';
 import {
   Entity,
   EntityRepositoryType,
+  ManyToOne,
   PrimaryKey,
   Property,
 } from '@mikro-orm/core';
 import { UserRole } from '@/common/enums/user-role.enum';
 import { BaseRepository } from '@/common/extensions/base-repository';
 import { OauthProvider } from '@/common/enums/oauth.enum';
+import { ApiHideProperty } from '@nestjs/swagger';
+import { Attachment } from '../attachments/attachment.entity';
 
 @Entity({ tableName: 'users', repository: () => userRepository })
 export class User {
   @PrimaryKey()
   id = v4();
 
-  @Property()
-  name!: string;
+  @Property({
+    nullable : true
+  })
+  name? : string;
 
   @Property()
   email!: string;
 
-  @Property()
+  @ApiHideProperty()
+  @Property({ hidden: true })
   passwordHash!: string;
 
   @Property()
   role!: UserRole;
 
-  @Property({ nullable: true })
-  photo?: string;
+  @Property()
+  phone!: string;
 
-  @Property({ nullable: true })
-  photoThumbnail?: string;
+  @ManyToOne(() => Attachment,{nullable: true})
+  avatar?: Attachment;
 
   @Property()
   notificationEnabled?: boolean = true;
 
-  @Property()
-  weeklyReminders?: boolean = false;
 
   @Property({ nullable: true })
   emailVerifiedAt?: Date;

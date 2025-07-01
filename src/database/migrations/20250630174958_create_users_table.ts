@@ -8,16 +8,14 @@ export async function up(knex: Knex): Promise<void> {
       return knex.schema.createTable(tableName, function (table) {
         table.uuid('id').primary().defaultTo(knex.fn.uuid());
 
-        table.string('name').notNullable();
+        table.string('name').nullable();
         table.string('email').notNullable().unique();
         table.string('password_hash').notNullable();
         table.string('role').notNullable();
+        table.string('phone').notNullable();
 
-        table.string('photo').nullable();
-        table.string('photo_thumbnail').nullable();
 
         table.boolean('notification_enabled').notNullable().defaultTo(true);
-        table.boolean('weekly_reminders').notNullable().defaultTo(false);
 
         table.timestamp('email_verified_at').nullable();
 
@@ -26,6 +24,14 @@ export async function up(knex: Knex): Promise<void> {
           .notNullable()
           .defaultTo(false);
         table.string('two_factor_authentication_secret').nullable();
+
+
+        table.
+          uuid('avatar_id').
+          nullable().
+          references('id').
+          inTable('attachments').
+          onDelete('SET NULL');
 
         table.string('oauth_provider').nullable();
         table.string('oauth_provider_id').nullable();

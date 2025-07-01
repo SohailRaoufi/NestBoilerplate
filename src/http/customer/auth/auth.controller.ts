@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 import {
+  ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
@@ -28,8 +29,10 @@ import { EmailVerifyOtpDto } from './dto/email-verfiy-otp.dto';
 import { EmailResendOtpDto } from './dto/email-resend-otp.dto';
 import { AppleUserPayload, GoogleUserPayload } from './dto/oauth.dto';
 import { UserJwtGuard } from '@/common/guards/user.guard';
+import { RegisterDto } from './dto/register.dto';
+import { TokenResponseDto } from './dto/token.dto';
 
-@ApiTags('Client - Auth')
+@ApiTags('Customer - Auth')
 @Controller()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -38,33 +41,34 @@ export class AuthController {
    * User Sign In
    *=============================================*/
 
-  @Post('/sign-in/email')
+  @Post('/login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User Sign In' })
-  @ApiNoContentResponse({
-    description: 'User sign in successfully',
-  })
+  @ApiOperation({ summary: 'Login' })
   async signInEmail(
     @Body() payload: EmailSignInDto,
     @DeviceId() deviceId: string,
-  ) {
+  ) : Promise<TokenResponseDto> {
     return await this.authService.signInEmail(payload, deviceId);
+  }
+
+  @Post('/register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register' })
+  async register(@Body() payload: RegisterDto) {
+    return await this.authService.register(payload);
   }
 
   /*==============================================
    * Verify OTP Code
    *=============================================*/
 
-  @Post('/verify-otp')
+  @Post('/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify OTP Code' })
-  @ApiResponse({
-    description: 'OTP verified successfully',
-  })
   async verifyOtp(
     @Body() payload: EmailVerifyOtpDto,
     @DeviceId() deviceId: string,
-  ) {
+  ) : Promise<TokenResponseDto> {
     return await this.authService.verifyEmailOtp(
       payload.otpCode,
       payload.email,
@@ -76,7 +80,7 @@ export class AuthController {
    * Resend OTP Code
    *=============================================*/
 
-  @Post('/resend-otp')
+  @Post('/otp/resend')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Resend OTP Code' })
   @ApiNoContentResponse({
@@ -90,7 +94,7 @@ export class AuthController {
    * Forget Password
    *=============================================*/
 
-  @Post('/forget-password')
+  @Post('/password/reset/request')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Forget Password' })
   @ApiNoContentResponse({
@@ -104,12 +108,9 @@ export class AuthController {
    * Reset Password
    *=============================================*/
 
-  @Post('/reset-password')
+  @Post('/password/reset')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Reset Password' })
-  @ApiNoContentResponse({
-    description: 'Password reset successfully',
-  })
   async resetPassword(@Body() payload: ResetPasswordDto) {
     await this.authService.resetPassword(payload);
   }
@@ -118,7 +119,7 @@ export class AuthController {
    * SignOut User
    *=============================================*/
 
-  @Post('/sign-out')
+  @Post('/logout')
   @UseGuards(UserJwtGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Sign Out User' })
@@ -136,13 +137,10 @@ export class AuthController {
   @Post('/oauth/google')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Google oauth' })
-  @ApiOkResponse({
-    description: 'Google Oauth',
-  })
   async googleOauth(
     @Body() payload: GoogleUserPayload,
     @DeviceId() deviceId: string,
-  ) {
+  ): Promise<TokenResponseDto> {
     return await this.authService.findOrCreateGoogleUser(payload, deviceId);
   }
 
@@ -153,13 +151,10 @@ export class AuthController {
   @Post('/oauth/apple')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Apple oauth' })
-  @ApiOkResponse({
-    description: 'Apple Oauth',
-  })
   async appleOauth(
     @Body() payload: AppleUserPayload,
     @DeviceId() deviceId: string,
-  ) {
+  ) : Promise<TokenResponseDto> {
     return await this.authService.findOrCreateAppleUser(payload, deviceId);
   }
 }

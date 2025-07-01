@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { RouterModule } from '@nestjs/core';
+import { AttachmentsModule } from '../attachments/attachments.module';
 
 @Module({
   imports: [
+    AttachmentsModule,
     AuthModule,
     RouterModule.register([
       {
-        path: 'client',
+        path: 'customer',
         children: [
           {
             path: 'auth',
@@ -18,4 +20,4 @@ import { RouterModule } from '@nestjs/core';
     ]),
   ],
 })
-export class ClientModule {}
+export class CustomerModule {}

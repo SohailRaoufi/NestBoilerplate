@@ -15,11 +15,11 @@ export class DeviceIdGuard implements CanActivate {
     const deviceId = request.headers['x-device-id'];
 
     /**
-     * If the request path not starts with '/admin' or '/client' then ignore the guard and return true
+     * If the request path not starts with '/admin' or '/customer' then ignore the guard and return true
      */
     const path = request.route.path as string;
 
-    if (!path.startsWith('/admin') && !path.startsWith('/client')) {
+    if (!path.startsWith('/admin') && !path.startsWith('/customer')) {
       return true;
     }
 

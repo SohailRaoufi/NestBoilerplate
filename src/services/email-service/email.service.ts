@@ -5,9 +5,10 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { EmailQueue } from '@/queues/consumers/email.consumer';
 import { calculateExpiryInMinutes } from '@/utils/datetime';
 import {
-  ClientForgetPasswordEventPayload,
-  ClientOtpEventPayload,
-} from '@/events/definations/client/client.events';
+  CustomerForgetPasswordEvent,
+  CustomerForgetPasswordEventPayload,
+  CustomerOtpEventPayload,
+} from '@/events/definations/customer/customer.events';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { UserSecurityAction } from '@/entities/user/user-security-action.entity';
 import { SecurityActionsStatus } from '@/common/enums/security-action.enum';
@@ -28,11 +29,9 @@ export class EmailService {
     email,
     token,
     expiry,
-  }: ClientForgetPasswordEventPayload) {
+  }: CustomerForgetPasswordEventPayload) {
     // Convert expiry to minutes
     const minutes = calculateExpiryInMinutes(expiry);
-    // Create reasetLink using token
-    const resetLink = `${process.env.FRONTEND_URL}/password-reset?token=${token}`;
 
     // add email to queue
     await this.emailQueue.add('forget-password-email', {
@@ -43,7 +42,7 @@ export class EmailService {
         title: 'Forget Your Password',
         fullName,
         expiryMinutes: minutes,
-        resetLink,
+        token : token
       },
     });
   }
@@ -54,7 +53,7 @@ export class EmailService {
     email,
     expiry,
     fullName,
-  }: ClientOtpEventPayload) {
+  }: CustomerOtpEventPayload) {
     try {
       const expiryMinutes = calculateExpiryInMinutes(expiry);
 

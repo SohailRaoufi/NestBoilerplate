@@ -7,12 +7,13 @@ import { databaseConfigs } from './configs/database.config';
 import { QueuesModule } from './queues/queues.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { mailerConfigs } from './configs/mailer.config';
-import { ClientModule } from './http/client/client.module';
+import { CustomerModule } from './http/customer/customer.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
 import { DeviceIdGuard } from './common/guards/device-id.guard';
 import { EmailModule } from './services/email-service/email.module';
 import { EventsModule } from './events/events.module';
+import { AttachmentsModule } from './http/attachments/attachments.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { EventsModule } from './events/events.module';
     EventsModule,
     EventEmitterModule.forRoot(),
     QueuesModule,
-    ClientModule,
+    AttachmentsModule,
+    CustomerModule,
   ],
   controllers: [],
   providers: [

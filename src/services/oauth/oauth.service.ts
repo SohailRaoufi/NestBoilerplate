@@ -13,6 +13,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { AttachmentsService } from '@/http/attachments/attachments.service';
 @Injectable()
 export class OauthService {
   private googleClientSecret!: string;

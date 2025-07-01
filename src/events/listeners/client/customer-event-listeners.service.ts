@@ -3,22 +3,22 @@ import { Injectable } from '@nestjs/common';
 
 import { EmailService } from '@/services/email-service/email.service';
 import {
-  ClientForgetPasswordEvent,
-  ClientSendOtpEvent,
-} from '@/events/definations/client/client.events';
+  CustomerForgetPasswordEvent,
+  CustomerSendOtpEvent,
+} from '@/events/definations/customer/customer.events';
 import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
-export class ClientEventListener {
+export class CustomerEventListener {
   constructor(private readonly emailService: EmailService) {}
 
   @OnEvent('user.forgot-password')
-  async handleUserForgetPasswordEvent(payload: ClientForgetPasswordEvent) {
+  async handleUserForgetPasswordEvent(payload: CustomerForgetPasswordEvent) {
     await this.emailService.sendForgetPasswordEmail(payload.payload);
   }
 
   @OnEvent('user.send-otp')
-  async handleUserRegiserEvent(payload: ClientSendOtpEvent) {
+  async handleUserRegiserEvent(payload: CustomerSendOtpEvent) {
     await this.emailService.sendOtp(payload.payload);
   }
 }

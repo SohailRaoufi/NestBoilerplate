@@ -13,6 +13,7 @@ import { AuthController } from './auth.controller';
 import { UserJwtStrategy } from '@/common/strategies/user-jwt.strategy';
 import { jwtUserOptions } from '@/configs/auth.config';
 import { UserSecurityAction } from '@/entities/user/user-security-action.entity';
+import { AttachmentsModule } from '@/http/attachments/attachments.module';
 
 @Module({
   providers: [AuthService, UserJwtStrategy],
@@ -20,6 +21,7 @@ import { UserSecurityAction } from '@/entities/user/user-security-action.entity'
   imports: [
     MikroOrmModule.forFeature([User, UserSecurityAction, UserDevice]),
     JwtModule.register(jwtUserOptions),
+    AttachmentsModule,
     S3BucketModule,
     OauthModule,
   ],
