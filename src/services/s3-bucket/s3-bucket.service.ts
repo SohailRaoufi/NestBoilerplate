@@ -3,7 +3,7 @@
 import 'dotenv/config';
 import * as sharp from 'sharp';
 import { extname } from 'path';
-import { fromBuffer } from 'file-type';
+import { fileTypeFromBuffer } from 'file-type';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
@@ -251,7 +251,7 @@ export class S3BucketService {
     mimeType: string;
   }> {
     // Determine the file type
-    const detectedType = await fromBuffer(buffer);
+    const detectedType = await fileTypeFromBuffer(buffer);
 
     // Validate the file mimetype against the detected type
     const isImage = detectedType?.mime.startsWith('image/');

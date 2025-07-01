@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import 'dotenv/config';
-import { fromBuffer } from 'file-type';
+import { fileTypeFromBuffer } from 'file-type';
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 import { allowedFileMimeTypes } from '../constants/files';
 import { UnprocessableException } from '../exceptions/unprocessable';
@@ -127,7 +127,7 @@ export class FileValidationPipe<T extends Category> implements PipeTransform {
    */
   private async validateFileType(file: Express.Multer.File): Promise<boolean> {
     // Extract File type
-    const fileType = await fromBuffer(file.buffer);
+    const fileType = await fileTypeFromBuffer(file.buffer);
 
     if (!fileType) return false;
 
