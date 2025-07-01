@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { RouterModule } from '@nestjs/core';
 import { AttachmentsModule } from '../attachments/attachments.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
     AttachmentsModule,
     AuthModule,
+    ProfileModule,
     RouterModule.register([
       {
         path: 'customer',
@@ -14,6 +16,10 @@ import { AttachmentsModule } from '../attachments/attachments.module';
           {
             path: 'auth',
             module: AuthModule,
+          },
+          {
+            path: 'profile',
+            module: ProfileModule,
           },
         ],
       },
