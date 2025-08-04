@@ -72,6 +72,8 @@ export class ProfileController {
   @ApiNoContentResponse({
     description: 'Successfully disabled two factor authentication.',
   })
+  console.log("");
+  
   async disableTwoFactorAuthentication(@CurrentUser() user: User) {
     await this.profileService.disableTwoFactorAuthentication(user);
   }
