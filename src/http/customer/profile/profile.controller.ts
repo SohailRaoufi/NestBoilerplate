@@ -42,6 +42,7 @@ export class ProfileController {
     @CurrentUser() user: User,
     @Body() payload: UpdatePasswordDto,
   ) {
+    console.log('test');
     await this.profileService.updatePassword(user, payload);
   }
 
