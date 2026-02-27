@@ -26,8 +26,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.840.0",
-    "@aws-sdk/s3-request-presigner": "^3.840.0",
+    "@aws-sdk/client-s3": "^3.999.0",
+    "@aws-sdk/s3-request-presigner": "^3.999.0",
     "@bull-board/api": "^6.10.1",
     "@bull-board/express": "^6.10.1",
     "@bull-board/nestjs": "^6.10.1",
@@ -113,5 +113,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "overrides": {
+    "fast-xml-parser": "5.3.9"
   }
 }

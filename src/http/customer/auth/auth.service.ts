@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import 'dotenv/config';
 import { v4 } from 'uuid';
 import * as crypto from 'crypto';
@@ -29,7 +28,10 @@ import {
 } from '@/common/enums/security-action.enum';
 import { getAheadDateByMin } from '@/utils/datetime';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CustomerForgetPasswordEvent, CustomerSendOtpEvent } from '@/events/definations/customer/customer.events';
+import {
+  CustomerForgetPasswordEvent,
+  CustomerSendOtpEvent,
+} from '@/events/definations/customer/customer.events';
 import { UserDevice } from '@/entities/user/user-device.entity';
 import { OauthService } from '@/services/oauth/oauth.service';
 import { OauthProvider } from '@/common/enums/oauth.enum';
@@ -109,14 +111,40 @@ export class AuthService {
    * @returns Promise containing success message and access token
    * @throws UnprocessableEntityException if email sending fails
    */
-  sendEmailOtp() {
+  async sendEmailOtp(userEmail: string) {
+    const user = await this.CheckUserExists(userEmail);
+
+    if (user.emailVerifiedAt) {
+      throw new UnprocessableException({
+        message: 'Email is already verified.',
+        field: 'email',
+      });
+    }
+
+    const resetToken = this.generateOtp();
+
+    const expiry = getAheadDateByMin(15);
+
+    const userOtp = this.em.create(UserSecurityAction, {
+      user: user,
+      type: SecurityActionType.OTP,
+      secret: resetToken,
+      expiredAt: expiry,
+      status: SecurityActionsStatus.PENDING,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await this.em.persistAndFlush(userOtp);
+
     this.eventEmitter.emit(
-      'user.forgot-password',
-      new CustomerForgetPasswordEvent({
-        fullName: "Nigga ",
-        email: 'masoom.dev@proton.me',
-        token: "123124213",
-        expiry: new Date(Date.now() + 1000 * 60 * 15),
+      'user.send-otp',
+      new CustomerSendOtpEvent({
+        email: user.email,
+        otpCode: parseInt(userOtp.secret),
+        otpId: userOtp.id,
+        fullName: user.name || user.email,
+        expiry,
       }),
     );
   }
@@ -129,7 +157,11 @@ export class AuthService {
    * @throws BadRequestException if OTP is invalid or expired
    * @returns token
    */
-  async verifyEmailOtp(otpCode: string, userEmail: string, deviceId: string) : Promise<{token :string}> {
+  async verifyEmailOtp(
+    otpCode: string,
+    userEmail: string,
+    deviceId: string,
+  ): Promise<{ token: string }> {
     const user = await this.CheckUserExists(userEmail);
 
     // Prevent re-verifying if already verified
@@ -191,7 +223,7 @@ export class AuthService {
       }
 
       // Reset Token
-      const resetToken = this.generateOtp();
+      const resetToken = this.generateResetToken();
 
       // Expiry Date -> 15 Minutes from now
       const expiry = getAheadDateByMin(15);
@@ -229,11 +261,11 @@ export class AuthService {
    * @param payload
    */
   async resetPassword(payload: ResetPasswordDto) {
-    let user = await this.CheckUserExists(payload.email);
+    const user = await this.CheckUserExists(payload.email);
 
     const userForgetPassword = await this.em.findOne(UserSecurityAction, {
       secret: payload.token,
-      user : user.id
+      user: user.id,
     });
 
     if (!userForgetPassword) {
@@ -261,6 +293,11 @@ export class AuthService {
         passwordHash: hashedPassword,
       },
     );
+
+    await this.em.nativeDelete(UserSecurityAction, {
+      id: userForgetPassword.id,
+      status: SecurityActionsStatus.PENDING,
+    });
   }
 
   /**
@@ -359,22 +396,21 @@ export class AuthService {
     return Math.floor(10000 + Math.random() * 90000).toString();
   }
 
+  generateResetToken() {
+    return crypto.randomBytes(32).toString('base64url');
+  }
 
-  async handleExistingsUser(user : User){
-    if(user.emailVerifiedAt){
+  async handleExistingsUser(user: User) {
+    if (user.emailVerifiedAt) {
       throw new UnprocessableException({
         message: 'User with this email already exists.',
         field: 'email',
       });
     }
 
-
-    const existingUserOtp = await this.em.findOne(
-      UserSecurityAction,
-      {
-        user: user,
-      },
-    );
+    const existingUserOtp = await this.em.findOne(UserSecurityAction, {
+      user: user,
+    });
 
     if (existingUserOtp) {
       // delete the existing token
@@ -402,33 +438,31 @@ export class AuthService {
     this.eventEmitter.emit(
       'user.send-otp',
       new CustomerSendOtpEvent({
-        email : user.email,
-        otpCode : parseInt(userOtp.secret),
-        otpId : userOtp.id,
-        fullName : user.name || "",
-        expiry
-        
-      })
-    )
+        email: user.email,
+        otpCode: parseInt(userOtp.secret),
+        otpId: userOtp.id,
+        fullName: user.name || '',
+        expiry,
+      }),
+    );
   }
-  
 
   async register(payload: RegisterDto) {
-    let user = await this.userRepository.findOne({email: payload.email})
-    if(user){
-      console.log("here");
+    let user = await this.userRepository.findOne({ email: payload.email });
+    if (user) {
+      console.log('here');
       return this.handleExistingsUser(user);
     }
 
-    user = this.em.create(User,{
-      email : payload.email,
-      passwordHash : await hashPassword(payload.password),
-      phone : payload.phone,
-      name : null,
-      twoFactorAuthenticationEnabled : false,
-      emailVerifiedAt : null,
-      role : UserRole.CUSTOMER
-    })
+    user = this.em.create(User, {
+      email: payload.email,
+      passwordHash: await hashPassword(payload.password),
+      phone: payload.phone,
+      name: null,
+      twoFactorAuthenticationEnabled: false,
+      emailVerifiedAt: null,
+      role: UserRole.CUSTOMER,
+    });
 
     const resetToken = this.generateOtp();
 
@@ -449,16 +483,14 @@ export class AuthService {
     this.eventEmitter.emit(
       'user.send-otp',
       new CustomerSendOtpEvent({
-        email : user.email,
-        otpCode : parseInt(userOtp.secret),
-        otpId : userOtp.id,
-        fullName : user.name||  user.email,
-        expiry
-        
-      })
-    )
+        email: user.email,
+        otpCode: parseInt(userOtp.secret),
+        otpId: userOtp.id,
+        fullName: user.name || user.email,
+        expiry,
+      }),
+    );
   }
-
 
   /**
    * ============================
@@ -466,8 +498,10 @@ export class AuthService {
    * ============================
    */
 
-  
-  async findOrCreateGoogleUser(payload: GoogleUserPayload, deviceId: string): Promise<{
+  async findOrCreateGoogleUser(
+    payload: GoogleUserPayload,
+    deviceId: string,
+  ): Promise<{
     token: string;
   }> {
     const { token } = payload;
@@ -485,9 +519,7 @@ export class AuthService {
       const file =
         await this.oauthService.fetchProfileImageAsFile(profilePictureUrl);
 
-      const filedata = await this.attachmentService.upload(
-        file
-      )
+      const filedata = await this.attachmentService.upload(file);
 
       user = this.userRepository.create({
         email,
@@ -495,7 +527,7 @@ export class AuthService {
         role: UserRole.CUSTOMER,
         name: `${firstName} ${lastName}`,
         emailVerifiedAt: new Date(),
-        avatar : filedata.attachment,
+        avatar: filedata.attachment,
         oauthProvider: OauthProvider.GOOGLE,
         oauthProviderId: sub,
         twoFactorAuthenticationEnabled: false,
@@ -518,7 +550,10 @@ export class AuthService {
     return { token: accessToken };
   }
 
-  async findOrCreateAppleUser(payload: AppleUserPayload, deviceId: string) : Promise<{
+  async findOrCreateAppleUser(
+    payload: AppleUserPayload,
+    deviceId: string,
+  ): Promise<{
     token: string;
   }> {
     const { token } = payload;
@@ -542,7 +577,7 @@ export class AuthService {
         emailVerifiedAt: new Date(),
         oauthProvider: OauthProvider.APPLE,
         oauthProviderId: sub,
-        avatar : null,
+        avatar: null,
         twoFactorAuthenticationEnabled: false,
         phone: '03001234567',
       });
