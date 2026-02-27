@@ -47,7 +47,7 @@ export class AuthController {
   async signInEmail(
     @Body() payload: EmailSignInDto,
     @DeviceId() deviceId: string,
-  ) : Promise<TokenResponseDto> {
+  ): Promise<TokenResponseDto> {
     return await this.authService.signInEmail(payload, deviceId);
   }
 
@@ -68,7 +68,7 @@ export class AuthController {
   async verifyOtp(
     @Body() payload: EmailVerifyOtpDto,
     @DeviceId() deviceId: string,
-  ) : Promise<TokenResponseDto> {
+  ): Promise<TokenResponseDto> {
     return await this.authService.verifyEmailOtp(
       payload.otpCode,
       payload.email,
@@ -87,7 +87,7 @@ export class AuthController {
     description: 'OTP code resent successfully',
   })
   resendOtp(@Body() payload: EmailResendOtpDto) {
-    return this.authService.sendEmailOtp();
+    return this.authService.sendEmailOtp(payload.email);
   }
 
   /*==============================================
@@ -154,7 +154,7 @@ export class AuthController {
   async appleOauth(
     @Body() payload: AppleUserPayload,
     @DeviceId() deviceId: string,
-  ) : Promise<TokenResponseDto> {
+  ): Promise<TokenResponseDto> {
     return await this.authService.findOrCreateAppleUser(payload, deviceId);
   }
 }
